@@ -12,22 +12,68 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let player = Player()
     var score = 0
     let scoreLabel = SKLabelNode(fontNamed: "Helvetica-Bold")
+    let highScoreLabel = SKLabelNode(fontNamed: "Helvetica-Bold")
+    
+    var moveRightSheet: SKTexture!
+    var moveRightFrames: [SKTexture] = []
+    var moveRightButton: SKSpriteNode!
+    
+    var moveLeftSheet: SKTexture!
+    var moveLeftFrames: [SKTexture] = []
+    var moveLeftButton: SKSpriteNode!
     
     let jumpButton = SKSpriteNode(color: .green, size: CGSize(width: 50, height: 50))
     let attackButton = SKSpriteNode(color: .red, size: CGSize(width: 50, height: 50))
     
-    let moveLeftButton = SKSpriteNode(color: .blue, size: CGSize(width: 50, height: 50))
-    let moveRightButton = SKSpriteNode(color: .blue, size: CGSize(width: 50, height: 50))
     
     var movingLeft  = false
     var movingRight = false
     
     override func didMove(to view: SKView) {
+        
+        moveLeftSheet = SKTexture(imageNamed: "Button move-Sheet-left")
+        moveLeftSheet.filteringMode = .nearest
+        
+        let frameWidthLeft = 1.0 / 3.0
+        let frameHeightLeft = 1.0
+        
+        moveLeftFrames = [
+            SKTexture(rect: CGRect(x: 0/3, y: 0, width: frameWidthLeft, height: frameHeightLeft), in: moveLeftSheet),
+            SKTexture(rect: CGRect(x: 1.0/3.0, y: 0, width: frameWidthLeft, height: frameHeightLeft), in: moveLeftSheet),
+            SKTexture(rect: CGRect(x: 2.0/3.0, y: 0, width: frameWidthLeft, height: frameHeightLeft), in: moveLeftSheet)
+        ]
+        
+        moveLeftButton = SKSpriteNode(texture: moveLeftFrames[0])
+        moveLeftButton.position = CGPoint(x: 100, y: 80)
+        moveLeftButton.zPosition = 50
+        moveLeftButton.alpha = 0.5
+        moveLeftButton.setScale(1.8)
+        addChild(moveLeftButton)
+        
+        moveRightSheet = SKTexture(imageNamed: "Button move-Sheet")
+        moveRightSheet.filteringMode = .nearest
+        
+        let frameWidth = 1.0 / 3.0
+        let frameHeight = 1.0
+        
+        moveRightFrames = [
+            SKTexture(rect: CGRect(x: 0/3, y: 0, width: frameWidth, height: frameHeight), in: moveRightSheet),
+            SKTexture(rect: CGRect(x: 1.0/3.0, y: 0, width: frameWidth, height: frameHeight), in: moveRightSheet),
+            SKTexture(rect: CGRect(x: 2.0/3.0, y: 0, width: frameWidth, height: frameHeight), in: moveRightSheet)
+        ]
+        
+        moveRightButton = SKSpriteNode(texture: moveRightFrames[0])
+        moveRightButton.position = CGPoint(x: size.width - 100, y: 80)
+        moveRightButton.zPosition = 50
+        moveRightButton.setScale(1.8)
+        moveRightButton.alpha = 0.5
+        addChild(moveRightButton)
+        
+        
         backgroundColor = .black
         physicsWorld.gravity = CGVector(dx: 0, dy: -9.8)
         physicsWorld.contactDelegate = self
         
-        // Лейбл счёта
         scoreLabel.text = "Score: 0"
         scoreLabel.fontSize = 24
         scoreLabel.fontColor = .white
@@ -35,7 +81,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         scoreLabel.zPosition = 100
         addChild(scoreLabel)
         
-        // Земля
+
         let ground = SKSpriteNode(color: .darkGray, size: CGSize(width: size.width, height: 50))
         ground.position = CGPoint(x: size.width / 2, y: ground.size.height / 2)
         ground.physicsBody = SKPhysicsBody(rectangleOf: ground.size)
@@ -44,10 +90,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ground.physicsBody?.contactTestBitMask = PhysicsCategory.player
         ground.physicsBody?.collisionBitMask = PhysicsCategory.player
         
-        ground.physicsBody?.restitution = 0.0   
+        ground.physicsBody?.restitution = 0.0
         ground.physicsBody?.friction = 1.0
         
         addChild(ground)
+        
+        let highScore = UserDefaults.standard.integer(forKey: "HighScore")
+        highScoreLabel.text = "Top: \(highScore)"
+        highScoreLabel.fontSize = 24
+        highScoreLabel.fontColor = .yellow
+        highScoreLabel.position = CGPoint(x: size.width - 80, y: size.height - 50)
+        highScoreLabel.zPosition = 100
+        addChild(highScoreLabel)
+        
         
         player.position = CGPoint(x: size.width * 0.5, y: ground.position.y + player.size.height / 2 + 80)
         addChild(player)
@@ -62,14 +117,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         attackButton.zPosition = 50
         addChild(attackButton)
         
-        moveLeftButton.position = CGPoint(x:100, y: 60)
-        
-        moveRightButton.position = CGPoint(x: size.width - 100, y: 60)
-        
-        moveLeftButton.alpha = 0.3
-        moveRightButton.alpha = 0.3
-        addChild(moveLeftButton)
-        addChild(moveRightButton)
         
         let spawnAction = SKAction.run { [weak self] in
             self?.spawnEnemy()
@@ -126,10 +173,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         player.removeFromParent()
         
         let gameOverScene = GameOverScene(size: self.size, finalScore: score)
+        let highScore = UserDefaults.standard.integer(forKey: "HighScore")
+        if score > highScore {
+            UserDefaults.standard.set(score, forKey: "HighScore")
+        }
+        
         gameOverScene.scaleMode = .aspectFill
         let transition = SKTransition.crossFade(withDuration: 1.0)
         
-        let delay = SKAction.wait(forDuration: 0.2) // 0.1–0.3 обычно достаточно
+        let delay = SKAction.wait(forDuration: 0.2)
         let present = SKAction.run { [weak self] in
             guard let self = self, let skView = self.view else { return }
             skView.presentScene(gameOverScene, transition: transition)
@@ -140,42 +192,70 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func increaseScore(by points: Int) {
         score += points
         scoreLabel.text = "Score: \(score)"
+        updateHighScore()
+
+    }
+    
+    func updateHighScore() {
+        let highScore = UserDefaults.standard.integer(forKey: "HighScore")
+        highScoreLabel.text = "Top: \(highScore)"
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        
-        movingLeft = false
-        movingRight = false
-        
         for touch in touches {
             let location = touch.location(in: self)
-            
+
             if jumpButton.contains(location) { player.jump() }
             if attackButton.contains(location) { player.swordAttack(scene: self) }
-            
+
             if moveLeftButton.contains(location) {
                 movingLeft = true
                 movingRight = false
+                moveLeftButton.removeAllActions()
+                moveLeftButton.texture = moveLeftFrames[1]
             }
-            
+
             if moveRightButton.contains(location) {
                 movingRight = true
                 movingLeft = false
+                moveRightButton.removeAllActions()
+                moveRightButton.texture = moveRightFrames[1]
             }
         }
     }
     
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        movingLeft = false
-        movingRight = false
-        
         for touch in touches {
             let location = touch.location(in: self)
-            
-            if moveLeftButton.contains(location) { movingLeft = false }
-            if moveRightButton.contains(location) { movingRight = false }
+            if moveLeftButton.contains(location) {
+                movingLeft = false
+                moveLeftButton.texture = moveLeftFrames[0]
+            }
+            if moveRightButton.contains(location) {
+                movingRight = false
+                moveRightButton.texture = moveRightFrames[0]
+            }
         }
+
+        if !isAnyTouchOnButton(button: moveLeftButton, touches: touches) {
+            movingLeft = false
+            moveLeftButton.texture = moveLeftFrames[0]
+        }
+        if !isAnyTouchOnButton(button: moveRightButton, touches: touches) {
+            movingRight = false
+            moveRightButton.texture = moveRightFrames[0]
+        }
+    }
+
+    private func isAnyTouchOnButton(button: SKSpriteNode, touches: Set<UITouch>) -> Bool {
+        for touch in touches {
+            let location = touch.location(in: self)
+            if button.contains(location) {
+                return true
+            }
+        }
+        return false
     }
     
     override func update(_ currentTime: TimeInterval) {

@@ -51,29 +51,25 @@ class Player: SKSpriteNode {
     
     func swordAttack(scene: SKScene) {
         let direction: CGFloat = self.xScale >= 0 ? 1 : -1
-
         
-        let sword = SKSpriteNode(color: .yellow, size: CGSize(width: 60, height: 20))
-        
-        sword.position = CGPoint(
-            x: self.position.x + (self.size.width / 2 + sword.size.width / 2) * direction,
+        let swordHitbox = SKNode()
+        swordHitbox.position = CGPoint(
+            x: self.position.x + (self.size.width / 2 + 30) * direction,
             y: self.position.y
         )
-        sword.zPosition = 10
+        swordHitbox.zPosition = 10
         
-        sword.physicsBody = SKPhysicsBody(rectangleOf: sword.size)
-        sword.physicsBody?.isDynamic = false
-        sword.physicsBody?.categoryBitMask = PhysicsCategory.sword
-        sword.physicsBody?.contactTestBitMask = PhysicsCategory.enemy
-        sword.physicsBody?.collisionBitMask = 0
+        swordHitbox.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: 60, height: 20))
+        swordHitbox.physicsBody?.isDynamic = false
+        swordHitbox.physicsBody?.categoryBitMask = PhysicsCategory.sword
+        swordHitbox.physicsBody?.contactTestBitMask = PhysicsCategory.enemy
+        swordHitbox.physicsBody?.collisionBitMask = 0
         
-        scene.addChild(sword)
-        
-        
+        scene.addChild(swordHitbox)
         
         let wait = SKAction.wait(forDuration: 0.3)
         let remove = SKAction.removeFromParent()
-        sword.run(SKAction.sequence([wait, remove]))
+        swordHitbox.run(SKAction.sequence([wait, remove]))
         
         print("⚔️ Sword Attack!")
     }

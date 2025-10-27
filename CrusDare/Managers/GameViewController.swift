@@ -21,7 +21,7 @@ class GameViewController: UIViewController {
             self.view.addSubview(skView)
         }
 
-        let scene = GameScene(size: skView.bounds.size)
+        let scene = MainMenuScene(size: skView.bounds.size)
         scene.scaleMode = .aspectFill
 
         skView.ignoresSiblingOrder = true
